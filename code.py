@@ -27,7 +27,7 @@ mosi = board.GP3
 miso = board.GP4
 cs = board.GP5
 reset = board.GP6
-#Create shina
+#Create bus
 displayio.release_displays()
 spi = busio.SPI(clock = clock, MOSI = mosi)
 display_bus = displayio.FourWire(spi, command = miso, chip_select = cs, reset = reset)
@@ -59,84 +59,156 @@ group = displayio.Group()
 '''==========================================REFACTOR ALL CODE=============================================='''
 
 class Game():
-    def start():
+    def __init__(self):
         pass
-    def update():
+    def start(self):
         pass
-    def render():
+    def update(self):
         pass
-    def switch_scene():
+    def render(self):
         pass
-
+    def switch_scene(self):
+        pass
 
 class Scene():
-    def add_layer():
-        pass
-    def update():
-        pass
-    def render():
+    def __init__(self,display, width=160, height=128, view=[0,0]):
+        self.width = width
+        self.height = height
+        self.view = view
+        self.layer = []
+        self.display = display
+        # group witch will be render
+        self.group = displayio.Group()
+
+
+    def add_layer(self,layers):
+        for l in layers:
+            self.layer.append(l)
+
+    def render(self):
+        for l in self.layer:
+            for obj in l:
+                sprite = obj.draw()
+                #check exist sprite or not
+                if sprite == None:
+                    continue
+                else:
+                    # if sprite allready in group then replace to new sprite
+                    # if sprite not in group it raises valueerror and sprite will be appended
+                    try:
+                        indx = self.group.index(sprite)
+                        self.group[indx] = sprite
+                    except ValueError:
+                        self.group.append(sprite)
+        # Add the Group with all sprites to the Display
+        display.root_group = group
+
      
      
 class Layer():
-    def add_abject():
-        pass
-    def update():
-        pass
-    def render():
+    def __init__(self):
+        self.objects = []
+
+    def add_object(self,objects):
+        for o in objects:
+            self.objects.appnd(o)
+    def remove_object(self,objects):
+        for o in objects:
+            self.objects.remove(o)
         
 
 class GameObject():
-    def __init__(self, x,y,sprite=None,collider=None):
+    def __init__(self, x,y,sprite=None,collider=None,sprite_num=None,sprite_scale=1,width=1,height=1,tile_width=16,tile_height=16):
         self.x = x
         self.y = y
         self.sprite = sprite
         self.collider = collider
-    
-    def update():
-        pass
-    
-    def draw():
-        pass
+        self.sprite_num=sprite_num
+        self.sprite_scale = sprite_scale
+        self.width = width
+        self.height = height
+        self.tile_width = tile_width
+        self.tile_height = tile_height
+        self.sprite_group = displayio.Group(scale=self.sprite_scale)
+
+    def draw(self):
+        if self.sprite != None:
+            self.sprite = displayio.TileGrid(sprite_sheet, pixel_shader=palette,
+                                             width=self.width,
+                                             height=self.height,
+                                             tile_width=self.tile_width,
+                                             tile_height=self.tile_height)
+            self.sprite_group.append(self.sprite)
+            return sprite_group
+        else:
+            return None
 
 class Player(GameObject):
-    def move():
+    def move(self):
         pass
 class Enemy(GameObject):
-    def ai_logic():
+    def ai_logic(self):
         pass
 
 
 class Collider():
-    def check_collision():
+    def check_collision(self):
         pass
-    def get_bounds():
-        pass
-
-
-class Render():
-    def draw_sprite():
-        pass
-    def clean_screen():
+    def get_bounds(self):
         pass
     
 
 class InputHandler():
-    def get_input():
+    def get_input(self):
         pass
     
 
 class ResourceManager():
-    def load_texture(path,transparent):
+    def __init__(self):
+        self.sprite = None
+
+    def load_texture(self,path,transparent):
         # Load the sprite sheet (bitmap)
         sprite_sheet, palette = adafruit_imageload.load(path,bitmap=displayio.Bitmap,palette=displayio.Palette)                                                                                    
         # delete white background on tile
         palette.make_transparent(transparent)
-        
-    def get_texture():
-        pass
-    
-textures = ResourceManager()
-textures.load_texture("/castle_sprite_sheet.bmp", 16)
+        self.sprite = sprite_sheet
+
+
+
+#load sprite
+all_texture = ResourceManager()
+all_texture.load_texture("/castle_sprite_sheet.bmp", 16)
+
+#display
+clock = board.GP2
+mosi = board.GP3
+miso = board.GP4
+cs = board.GP5
+reset = board.GP6
+#Create bus
+displayio.release_displays()
+spi = busio.SPI(clock = clock, MOSI = mosi)
+display_bus = displayio.FourWire(spi, command = miso, chip_select = cs, reset = reset)
+display = ST7735R(display_bus, rotation = 270, width=160, height=128)
+
+
+
+
+some_shit = GameObject(0,0)
+
+background_layer = Layer()
+mid_layer = Layer()
+background_layer.add_object([some_shit])
+
+scene = Scene(display)
+scene.add_layer(background_layer)
+
+input = InputHandler()
+
+while True:
+    scene.render()
+
 '''==========================================REFACTOR ALL CODE=============================================='''
 '''class Visible():
     def __init__(self, w=1, h=1, w_tile=16, h_tile=16, sprite_scale = 1, sprite_number = 0, can_walk = True):
